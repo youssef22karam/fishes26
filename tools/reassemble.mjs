@@ -1,0 +1,41 @@
+// Reassembles generated source files from their split parts.
+// Every file in this repo is kept at or below 30,000 bytes for upload;
+// the two files below are stored as numbered parts and rebuilt here.
+// Runs automatically before dev/build/preview (npm pre-hooks) or manually:
+//   node tools/reassemble.mjs
+import { readFileSync, writeFileSync, readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const LIMIT = 30000;
+
+const TARGETS = [
+  { out: "src/engine/model.ts", partsDir: "src/engine/parts", prefix: "model" },
+  { out: "src/engine/shader.ts", partsDir: "src/engine/parts", prefix: "shader" },
+  { out: "src/engine/skin.ts", partsDir: "src/engine/parts", prefix: "skin" },
+  { out: "src/gen/pigment.ts", partsDir: "src/gen/parts", prefix: "pigment" },
+  { out: "src/gen/genesis.ts", partsDir: "src/gen/parts", prefix: "genesis" },
+];
+
+for (const t of TARGETS) {
+  const dir = join(root, t.partsDir);
+  const names = readdirSync(dir)
+    .filter((n) => n.startsWith(t.prefix + ".part") && n.endsWith(".txt"))
+    .sort();
+  if (names.length === 0) {
+    console.error(`reassemble: no parts found for ${t.out} in ${t.partsDir}`);
+    process.exit(1);
+  }
+  const chunks = names.map((n) => {
+    const buf = readFileSync(join(dir, n));
+    if (buf.length > LIMIT) {
+      console.error(`reassemble: ${t.partsDir}/${n} is ${buf.length} bytes, over the ${LIMIT}-byte limit. Split it further before building.`);
+      process.exit(1);
+    }
+    return buf;
+  });
+  const out = Buffer.concat(chunks);
+  writeFileSync(join(root, t.out), out);
+  console.log(`reassemble: ${names.length} parts -> ${t.out} (${out.length} bytes)`);
+}
