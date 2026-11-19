@@ -1,0 +1,147 @@
+        anal = anal.map((d) => ({ ...d, h: r4(Math.min(0.38, d.h * range(r, 1.3, 1.7))), fray: 0.25 }));
+        notes.push({ icon: '❀', title: 'Flowing fins', text: 'Long, soft finnage is affordable only where the water barely moves — and it wins mates.' });
+      }
+    }
+    if (dTxt) notes.push({ icon: '△', title: 'Fin architecture', text: dTxt });
+
+    // 8 ── tail
+    let caudal: CaudalSpec;
+    let tTxt = '';
+    if (sharky) {
+      const fast = speed > 0.78;
+      caudal = fast ? { type: 'lunate', span: r4(range(r, 0.36, 0.46)), up: 0.56, len: r4(range(r, 0.24, 0.28)) } : { type: 'hetero', span: r4(range(r, 0.3, 0.46)), len: r4(benthicShark ? range(r, 0.28, 0.36) : range(r, 0.26, 0.32)) };
+      tTxt = fast ? 'A near-symmetric crescent tail on a keeled peduncle: the engine of a warm-bodied ocean sprinter.' : 'A heterocercal tail whose long upper lobe gives lift as well as thrust.';
+    } else if (whip) {
+      const tuft = plan !== 'eel' && chance(r, 0.18);
+      caudal = tuft ? { type: 'rounded', span: r4(range(r, 0.06, 0.1)), len: r4(range(r, 0.06, 0.1)) } : { type: 'pointed', span: r4(Math.max(0.03, g.P * 3)), len: r4(range(r, 0.035, 0.07)) };
+      tTxt = tuft ? 'The whip ends in a small tuft of a tail fin.' : 'The body simply runs out into a point; thrust comes from the whole trunk.';
+    } else {
+      const tw: Partial<Record<CaudalType, number>> = speed > 0.8 ? { lunate: 2.2, forked: 1.4 }
+        : speed > 0.6 ? { forked: 2.2, emarginate: 1, lunate: 0.5, lyre: 0.5 }
+          : speed > 0.4 ? { emarginate: 1.5, forked: 1.1, truncate: 1.1, lyre: 0.6, rounded: 0.5 }
+            : { rounded: 2, truncate: 1.5, emarginate: 0.6, lyre: 0.5, halfmoon: still ? 0.9 : 0, delta: still ? 0.6 : 0, pointed: 0.35 };
+      if (plan === 'bottom') { delete tw.lyre; delete tw.forked; delete tw.lunate; }
+      if (plan === 'globe') { delete tw.lyre; delete tw.halfmoon; delete tw.delta; delete tw.pointed; }
+      if (plan === 'hatchet' || plan === 'maw') Object.assign(tw, { forked: 2 });
+      const t = wpick<CaudalType>(r, tw, 'emarginate');
+      caudal = t === 'pointed' ? { type: 'pointed', span: r4(clamp(D * 0.9, 0.08, 0.2)), len: r4(range(r, 0.16, 0.24)) } : caudalGeom(t, D, g.P, r);
+      if ((t === 'forked' || t === 'lyre') && chance(r, 0.08 + 0.14 * wild)) {
+        const up = chance(r, 0.4), k = range(r, 1.35, 1.9), l = caudal.len ?? 0.22;
+        caudal = { ...caudal, lenUp: r4(up ? l * k : l), lenDn: r4(up ? l : l * k) };
+        notes.push({ icon: '⟩', title: up ? 'Whip-lobed tail' : 'Sword tail', text: `The ${up ? 'upper' : 'lower'} tail lobe is drawn out far beyond the other — a streamer for display${up ? '' : ' and for skittering at the surface'}.` });
+      }
+      if ((t === 'halfmoon' || t === 'delta') && chance(r, 0.6)) caudal.fray = 0.3;
+      tTxt = ({ lunate: 'A high, stiff crescent on a narrow peduncle — the hydrofoil of sustained high-speed cruising.', forked: 'A forked tail trims drag for long-distance swimming.', lyre: 'A lyre tail with trailing tips: speed in bursts and a flourish for display.', emarginate: 'A shallowly notched tail balances cruising and agility.', truncate: 'A square-cut tail delivers thrust for quick starts in cluttered habitat.', rounded: 'A broad, rounded tail gives explosive acceleration from a standstill.', halfmoon: 'A flowing half-moon tail: in still water display beats speed.', delta: 'A wide delta tail spreads like a fan for courtship.', pointed: 'A spear-shaped tail: slow, precise sculling.' } as Record<string, string>)[t] ?? '';
+    }
+    if (tTxt) notes.push({ icon: '⟩', title: `${caudal.type[0].toUpperCase() + caudal.type.slice(1)} tail`, text: tTxt });
+
+    // 9 ── paired fins
+    let pec: PairedFin | undefined, pel: PairedFin | undefined;
+    const ps = r4(HL + range(r, 0.004, 0.02));
+    if (sharky) {
+      pec = Pf(ps, -0.68, r4(range(r, 0.06, 0.08)), r4(benthicShark ? range(r, 0.13, 0.18) : range(r, 0.17, 0.27)), 'shark', -20, Math.round(benthicShark ? range(r, 62, 80) : range(r, 55, 74)), { alpha: 1, rays: 0, foil: 1 });
+      pel = Pf(r4(range(r, 0.55, 0.62)), -0.88, 0.048, r4(range(r, 0.06, 0.085)), 'shark', -22, 56, { alpha: 1, rays: 0, foil: 1 });
+    } else if (plan === 'eel') {
+      if (chance(r, 0.6)) pec = Pf(ps, -0.15, 0.014, r4(range(r, 0.02, 0.04)), 'round', -6, 22);
+    } else {
+      const wings = plan === 'spindle' && (H.id === 'pelagic' || H.id === 'seagrass' || H.id === 'estuary') && speed > 0.5 && speed < 0.8 && chance(r, 0.1 + 0.12 * wild);
+      const benthic = plan === 'bottom' || plan === 'tadpole';
+      if (wings) {
+        pec = Pf(ps, r4(range(r, 0.1, 0.35)), 0.04, r4(range(r, 0.42, 0.62)), 'falcate', -4, Math.round(range(r, 55, 72)));
+        notes.push({ icon: '◢', title: 'Wing pectorals', text: 'Enormous, stiff pectoral fins held out as wings: a burst from the tail launches the fish into a long glide above the surface.' });
+      } else if (benthic) {
+        pec = Pf(ps, r4(range(r, -0.7, -0.5)), r4(range(r, 0.055, 0.09)), r4(range(r, 0.15, 0.26)), 'fan', Math.round(range(r, -50, -25)), Math.round(range(r, 30, 55)), { alpha: 1 });
+        notes.push({ icon: '◢', title: 'Fan pectorals', text: 'Broad, muscular fan pectorals on a low base prop the fish on the bottom and paddle it in short hops.' });
+      } else if (speed > 0.72) pec = Pf(ps, r4(range(r, -0.5, -0.25)), r4(range(r, 0.03, 0.045)), r4(range(r, 0.17, 0.3)), 'falcate', Math.round(range(r, -22, -10)), Math.round(range(r, 28, 50)));
+      else if (plan === 'globe') pec = Pf(ps, r4(range(r, -0.2, 0.1)), 0.04, r4(range(r, 0.07, 0.11)), 'fan', 0, 25);
+      else pec = Pf(ps, r4(range(r, -0.42, -0.18)), r4(range(r, 0.035, 0.055)), r4(range(r, 0.12, 0.2) * (plan === 'ribbon' || plan === 'arrow' ? 0.65 : 1)), pick(r, ['round', 'round', 'tri', 'fan'] as FinShape[]), Math.round(range(r, -16, -4)), Math.round(range(r, 20, 32)));
+      // pelvics: thoracic in spiny-rayed forms, abdominal in soft-rayed ones, jugular in cold bottom forms, lost in ribbons and globes
+      const pl = clamp(0.06 + D * 0.2, 0.05, 0.16) * range(r, 0.8, 1.2);
+      if (plan === 'globe' || plan === 'ribbon' || (plan === 'maw' && chance(r, 0.5))) pel = undefined;
+      else if (plan === 'hatchet') pel = Pf(r4(g.pV + 0.06), -0.95, 0.015, 0.04, 'tri', -40, 12);
+      else if (benthic) pel = Pf(r4(chance(r, 0.4) ? HL * range(r, 0.72, 0.9) : ps + range(r, 0.01, 0.04)), -0.95, 0.03, r4(pl * 0.8), 'round', -58, 12);
+      else if (spinyRayed || plan === 'disc') pel = Pf(r4(ps + range(r, 0.015, 0.05)), -0.94, 0.03, r4(pl), 'tri', Math.round(range(r, -44, -34)), 20, { incise: 0, spine: true });
+      else pel = Pf(r4(clamp(range(r, 0.42, 0.56), ps + 0.08, (anal[0]?.s0 ?? 0.7) - 0.06)), -0.95, 0.028, r4(pl * 0.85), 'tri', -36, 18);
+      if (pel && !benthic && (H.id === 'swamp' || H.id === 'amazon' || H.id === 'reef' || H.id === 'lake') && speed < 0.45 && chance(r, 0.1 + 0.2 * wild)) {
+        pel = { ...pel, shape: 'thread', len: r4(range(r, 0.22, 0.4)), base: 0.016 };
+        notes.push({ icon: '⌇', title: 'Feeler pelvics', text: 'Pelvic fins drawn out into long, mobile, touch-sensitive threads that probe ahead in dim, cluttered water.' });
+      }
+    }
+
+    // 10 ── skin, gait, clade texture
+    const armored = plan === 'globe' && sq > 3;
+    const gar = plan === 'arrow' && fresh && chance(r, 0.3);
+    let skin: Species['skin'] =
+      sharky ? { scales: 0, kind: 'placoid', bump: 0.5 }
+        : armored ? { scales: 0, kind: 'bony', bump: 0.7 }
+          : gar ? { scales: irange(r, 50, 64), kind: 'ganoid', bump: 0.8 }
+            : plan === 'eel' || plan === 'tadpole' || plan === 'maw' || plan === 'globe' || (plan === 'ribbon' && chance(r, 0.6)) || (plan === 'bottom' && chance(r, 0.4)) ? { scales: 0, kind: 'smooth', bump: 0.2 }
+              : { scales: Math.round(clamp(range(r, 28, 70) * (D < 0.16 ? 1.7 : 1) * (lenM < 0.08 ? 0.7 : 1), 24, 130)), kind: spinyRayed ? 'ctenoid' : 'cycloid', bump: r4(range(r, 0.4, 0.75)) };
+    if (hide && !sharky && (plan === 'bottom' || plan === 'globe') && ['rock', 'coral', 'weed'].includes(H.substrate) && chance(r, 0.4)) { skin = { scales: 0, kind: 'warty', bump: 1 }; notes.push({ icon: '⁂', title: 'Warty skin', text: 'Lumpy, algae-like skin turns the fish into another encrusted rock.' }); }
+    if (gar) notes.push({ icon: '◆', title: 'Enamelled armour', text: 'Interlocking rhombic ganoid scales form a flexible suit of mail.' });
+    const mode: Species['swim']['mode'] = sharky ? 'carangiform' : plan === 'eel' || plan === 'ribbon' || plan === 'tadpole' ? 'anguilliform' : plan === 'globe' ? 'ostraciiform'
+      : speed > 0.86 && caudal.type === 'lunate' ? 'thunniform' : speed > 0.7 ? 'carangiform' : speed < 0.36 && D > 0.33 ? 'labriform' : 'subcarangiform';
+    const group = sharky ? 'Sharks' : plan === 'eel' ? 'Eels' : deep ? 'Deep sea' : plan === 'globe' || plan === 'ribbon' ? 'Oddballs'
+      : plan === 'disc' ? (fresh ? 'Cichlids' : 'Reef fishes') : plan === 'bottom' ? (skin.kind === 'warty' ? 'Scorpionfishes' : skin.kind === 'smooth' ? 'Catfishes' : 'Gobies & blennies')
+        : plan === 'arrow' ? (gar ? 'Primitive' : 'Predators') : plan === 'hatchet' ? 'Characins' : plan === 'tadpole' ? 'Cods'
+          : speed > 0.8 ? pick(r, ['Tunas & mackerels', 'Jacks']) : fresh ? pick(r, spinyRayed ? ['Sunfishes & perches', 'Cichlids'] : ['Carps & minnows', 'Salmon & trout', 'Characins']) : pick(r, spinyRayed ? ['Wrasses & parrotfishes', 'Groupers', 'Reef fishes'] : ['Herrings', 'Cods', 'Tarpons']);
+    const gill: Species['gill'] = sharky ? { kind: 'slits' } : plan === 'eel' || plan === 'globe' || (plan === 'bottom' && eye.bulge === 1) ? { kind: 'restricted' } : undefined;
+
+    // 11 ── ecological organs
+    const barbels: Barbel[] = [];
+    const spikes: Spike[] = [];
+    let spines: Species['spines'], fronds: Species['fronds'], cirri = false;
+    const ms = Math.max(0.006, mouth.s), mg = mouth.gape;
+    if (niche === 'lure') {
+      const col = pick(r, ['#9ff4ff', '#a0f0ff', '#7fd8ff', '#c8ffe8', '#ffe8a0', '#ff9ad0']);
+      const chin = plan === 'maw' && whip && chance(r, 0.5);
+      barbels.push(chin
+        ? { s: r4(clamp(mg * 0.35, 0.02, 0.07)), y: -0.95, len: r4(range(r, 0.12, 0.3)), dir: [-0.2, -1, 0], droop: -0.3, r: 0.002, bulb: col, pairs: false }
+        : { s: r4(clamp(eye.s * range(r, 0.6, 1.1), 0.03, 0.18)), y: 1, len: r4(range(r, 0.14, 0.42)), dir: [r4(range(r, 0.6, 1)), r4(range(r, 0.9, 1.3)), 0], droop: r4(range(r, 0.1, 0.35)), r: 0.005, bulb: col, pairs: false });
+      notes.push({ icon: '✦', title: chin ? 'Luminous chin barbel' : 'Bioluminescent lure', text: chin ? 'A long chin barbel tipped with a glowing bulb, twitched to mimic a small glowing animal.' : 'The first dorsal spine has migrated onto the snout as a fishing rod tipped with a bulb of luminous bacteria.' });
+    }
+    const murky = H.turb > 0.45 || H.light < 0.2 || H.substrate === 'mud' || H.substrate === 'sand';
+    if (!sharky && !forceps && !barbels.length && (niche === 'benthivore' || niche === 'scavenger' || H.id === 'cave') && murky && chance(r, plan === 'bottom' ? 0.75 : 0.4)) {
+      const type = pick(r, ['chin', 'whiskers', 'whiskers', 'rictal'] as const);
+      const long = H.id === 'river' || H.id === 'amazon' || H.id === 'cave' ? 1.6 : 1;
+      if (type === 'chin') barbels.push({ s: r4(ms + mg * 0.4), y: -0.95, len: r4(range(r, 0.03, 0.06)), dir: [0.1, -1, 0], droop: 0, r: 0.003, pairs: false });
+      else if (type === 'rictal') barbels.push({ s: r4(ms + mg * 0.6), y: -0.35, len: r4(range(r, 0.025, 0.05)), dir: [0.2, -0.6, 0.6], droop: 0.2, r: 0.003 }, { s: r4(ms + 0.006), y: -0.2, len: r4(range(r, 0.015, 0.03)), dir: [0.4, -0.4, 0.6], droop: 0.2, r: 0.0025 });
+      else barbels.push({ s: r4(ms + mg * 0.7), y: 0.15, len: r4(range(r, 0.12, 0.24) * long), dir: [0.4, 0.1, 1], droop: 0.25, r: 0.0045 }, { s: r4(ms + mg * 0.5), y: -0.85, len: r4(range(r, 0.04, 0.07) * long), dir: [0.4, -1, 0.3], droop: 0.1, r: 0.003 });
+      notes.push({ icon: '〰', title: type === 'whiskers' ? 'Sensory whiskers' : 'Barbels', text: 'Barbels studded with taste buds “taste” the bottom for buried prey where eyes are of little use.' });
+    }
+    if (sharky && benthicShark && !rostrum && chance(r, 0.5)) barbels.push({ s: r4(Math.max(0.01, mouth.s * 0.55)), y: -0.6, len: r4(range(r, 0.018, 0.032)), dir: [0.3, -1, 0.3], droop: 0.1, r: 0.003 });
+    if (hide && !sharky && ['reef', 'rocky', 'kelp', 'sandflat', 'seagrass'].includes(H.id) && (plan === 'bottom' || plan === 'spindle') && chance(r, 0.5)) { cirri = true; notes.push({ icon: '⁑', title: 'Fringed cirri', text: 'Feathery skin flaps above the eyes break up the head outline and mimic algae.' }); }
+    if (plan === 'globe' && !armored && niche !== 'lure' && chance(r, 0.4)) { spines = { n: irange(r, 90, 160), len: r4(range(r, 0.022, 0.04)) }; notes.push({ icon: '✶', title: 'Erectile spines', text: 'Inflating the stomach with water erects a coat of spines — an unswallowable ball.' }); }
+    if ((armored || (plan === 'bottom' && skin.kind !== 'smooth')) && ed > 0 && !top && chance(r, armored ? 0.55 : 0.12 * wild)) {
+      const len = range(r, 0.07, 0.2);
+      spikes.push({ s: r4(Math.max(0.05, eye.s * 0.8)), y: 0.9, len: r4(len), dir: [1, 0.22, 0.17], r: 0.21, horn: 1 });
+      if (armored && chance(r, 0.6)) spikes.push({ s: r4(g.sP - 0.12), y: -0.9, len: r4(len * 0.6), dir: [-1, -0.1, 0.14], r: 0.22, horn: 0.8 });
+      notes.push({ icon: '⟟', title: 'Brow horns', text: 'The armour is drawn out above each eye into a long horn — awkward to swallow and painful to bite.' });
+    }
+    if (!sharky && (H.id === 'kelp' || H.id === 'seagrass') && hide && (plan === 'arrow' || plan === 'spindle' || plan === 'bottom') && chance(r, 0.4)) {
+      const n = irange(r, 3, 6), at: [number, number, number][] = [];
+      for (let i = 0; i < n; i++) at.push([r4(lerp(0.2, 0.85, (i + 0.5) / n)), 1, r4(range(r, 0.06, 0.13))]);
+      for (let i = 0; i < n - 1; i++) at.push([r4(lerp(0.26, 0.8, (i + 0.5) / (n - 1))), -1, r4(range(r, 0.05, 0.11))]);
+      fronds = { at, c: '#8a9a40', style: H.id === 'kelp' ? 'leaf' : 'paddle' };
+      notes.push({ icon: '❧', title: 'Leafy appendages', text: `Skin lobes shaped like ${H.id === 'kelp' ? 'kelp blades' : 'seagrass'} sway with the surge: the fish is one more drifting frond.` });
+    }
+    notes.unshift({ icon: '⬭', title: I.clade, text: I.what });
+
+    const over = {
+      id: id0, name: '', sci: '', group, note: '', lenM, plan: 'fish', HL: r4(HL),
+      body: {
+        D: r4(g.D), df: r4(g.df), pD: r4(g.pD), pV: r4(g.pV), P: r4(g.P), pedY: r4(g.pedY), W: r4(W), Wh: r4(Wh), Wt, sq: r4(sq), prof,
+        ...(bellyFlat ? { bellyFlat: r4(bellyFlat) } : {}), ...(keelV ? { keelVentral: r4(keelV) } : {}), ...(snoutFlat ? { snoutFlat: r4(snoutFlat) } : {}), ...(keel ? { keel: r4(keel) } : {}),
+      },
+      mouth, eye, skin, swim: { mode },
+      fins: { dorsal, anal, caudal, pec, pel, finlets, color: '#9aa4a8', alpha: sharky ? 1 : plan === 'disc' || plan === 'globe' ? 0.85 : 0.72 },
+      ...(rostrum ? { rostrum } : {}), ...(gill ? { gill } : {}), ...(barbels.length ? { barbels } : {}), ...(spikes.length ? { spikes } : {}),
+      ...(spines ? { spines } : {}), ...(fronds ? { fronds } : {}), ...(cirri ? { cirri } : {}),
+    };
+    sp = remeasure(make([], over as unknown as SP));
+  }
+  if (plan === 'ray' || plan === 'flat') notes.unshift({ icon: '⬭', title: I.clade, text: I.what });
+  const L: Lineage = { name: I.clade, niches: Object.keys(AFF[plan]) as Niche[], roots: I.roots, nouns: I.nouns, kind: I.kind, mouth: true, body: true, caudal: null, finMods: true };
+  return { sp, plan, niche, L, lineage: I.lineage, clade: I.clade, notes, speed };
+}
+export const PLAN_NAMES = Object.fromEntries((Object.keys(INFO) as Plan[]).map((p) => [p, INFO[p].clade])) as Record<Plan, string>;
