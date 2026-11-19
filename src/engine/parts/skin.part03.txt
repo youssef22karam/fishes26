@@ -1,0 +1,61 @@
+      for (let i = 2; i < lm.oper.length - 2; i += 5) { g.beginPath(); g.moveTo(hx, hy); g.lineTo(lm.oper[i][0] - 0.004, lm.oper[i][1]); g.stroke(); }
+    }
+    if (lm.preop.length) {
+      g.strokeStyle = 'rgba(196,196,196,0.4)'; g.lineWidth = 0.004;
+      path(lm.preop, -0.003); g.stroke();
+      g.strokeStyle = 'rgba(60,60,60,0.55)'; g.lineWidth = 0.002;
+      path(lm.preop); g.stroke();
+    }
+    if (lm.maxUp.length) {
+      g.fillStyle = 'rgba(184,184,184,0.45)';
+      g.beginPath();
+      lm.maxUp.forEach(([s, h], i) => (i ? g.lineTo(s, h) : g.moveTo(s, h)));
+      for (let i = lm.maxLo.length - 1; i >= 0; i--) g.lineTo(lm.maxLo[i][0], lm.maxLo[i][1]);
+      g.closePath(); g.fill();
+      g.strokeStyle = 'rgba(52,52,52,0.6)'; g.lineWidth = 0.0018;
+      path(lm.maxUp); g.stroke();
+    }
+    for (const line of lm.branch) {
+      g.strokeStyle = 'rgba(190,190,190,0.4)'; g.lineWidth = 0.0032;
+      path(line, 0, -0.006); g.stroke();
+      g.strokeStyle = 'rgba(70,70,70,0.5)'; g.lineWidth = 0.0016;
+      path(line); g.stroke();
+    }
+    for (const [sn, hn, rr] of lm.nares) {
+      g.fillStyle = 'rgba(182,182,182,0.42)';
+      dot(sn, hn, rr * 1.48); g.fill();
+      g.fillStyle = 'rgba(32,32,32,0.88)';
+      dot(sn, hn, rr); g.fill();
+    }
+    g.fillStyle = 'rgba(48,48,48,0.75)';
+    for (const [s, h] of lm.lat) { dot(s, h, 0.0013); g.fill(); }
+    // batoid ventral face: raised lips around a deep cleft, nostril pits under a fleshy curtain, gill-slit grooves
+    if (face.curtain.length) {
+      g.fillStyle = 'rgba(176,176,176,0.6)';
+      g.beginPath(); face.curtain.forEach(([s, h], i) => (i ? g.lineTo(s, h) : g.moveTo(s, h))); g.closePath(); g.fill();
+    }
+    for (const o of face.nares) {
+      g.fillStyle = 'rgba(200,200,200,0.7)';
+      g.beginPath(); o.forEach(([s, h], i) => (i ? g.lineTo(s + 0.0012, h) : g.moveTo(s + 0.0012, h))); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(24,24,24,0.95)';
+      g.beginPath(); o.forEach(([s, h], i) => (i ? g.lineTo(s, h) : g.moveTo(s, h))); g.closePath(); g.fill();
+    }
+    if (face.mouth.length) {
+      g.fillStyle = 'rgba(214,214,214,0.85)';
+      ribbon(g, face.mouth, 0.0085, hp, 0.4); g.fill();
+      g.fillStyle = 'rgba(16,16,16,0.95)';
+      ribbon(g, face.mouth, 0.0028, hp, 0.5); g.fill();
+    }
+    for (const sl of face.slits) {
+      g.fillStyle = 'rgba(206,206,206,0.75)';
+      ribbon(g, sl.map(([s, h]) => [s - 0.0018, h] as Pt), 0.003, hp, 0.3); g.fill();
+      g.fillStyle = 'rgba(30,30,30,0.9)';
+      ribbon(g, sl, 0.0019, hp, 0.3); g.fill();
+    }
+  });
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 4;
+  return tex;
+}
